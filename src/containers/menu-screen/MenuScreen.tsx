@@ -32,8 +32,6 @@ export class MenuScreen extends Component<Props, State> {
   }
 
 	componentDidMount() {
-		// Make a call here to /menu to get a list of ingredients and prices
-		// Set response to toppings in state
 		fetch(BASE_URL + 'menu')
 			.then(response => response.json())
 			.then(({ toppings }) => {
@@ -74,9 +72,30 @@ export class MenuScreen extends Component<Props, State> {
 	canSubtract = (idx: number) => Boolean(this.state.toppings[idx].amount > 0);
 
 	placeOrder = () => {
-		// place POST request
-		// on success:
-		this.props.navigation.navigate('Reciept', { userId: '1234', sessionId: '5678' }); // will be available under route.params
+		console.log('PROPS', this.props.navigation.state.params);
+		const { sessionId, userId } = this.props.navigation.state.params;
+
+		fetch(BASE_URL + 'order', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'User-Token': sessionId
+			},
+			body: JSON.stringify({ 
+				uid: userId,
+				pizza: ['Meat', 'Bacon', 'Cheese']
+			})
+		})
+			.then(response => response.json())
+			.then(data => {
+				if(!data.message) {
+					console.log('Success', data);
+					this.props.navigation.navigate('Reciept', { estimatedTime: data.estimatedTime });
+				}
+			})
+			.catch((e) => {
+				console.error('Error:', e);
+			});
 	}
 
 	render() {
@@ -85,7 +104,7 @@ export class MenuScreen extends Component<Props, State> {
 		return (
 			<View style={style.content}>
 				{loading && <ActivityIndicator />}
-				{/* {error && <Text style={style.error}>{Something went wrong, come back later}</Text>} */}
+				{error && <Text style={style.error}>{'Something went wrong, come back later'}</Text>}
 				
 				{/* TODO: Add total cost amount */}
 				{/* TODO: Add error text if menu call fails */}

@@ -24,12 +24,11 @@ export class AuthScreen extends Component<Props> {
 		})
 			.then(response => response.json())
 			.then(data => {
-				console.log('Success:', data);
-				if(!data.uid) {
+				if(data && data.message) {
 					// since the api doesnt return an error on existing accounts but just a string on a success message
 					// we are trying to catch it here
 					this.setState({
-						error: data,
+						error: data.message,
 						email: ''
 					})
 				} else {
