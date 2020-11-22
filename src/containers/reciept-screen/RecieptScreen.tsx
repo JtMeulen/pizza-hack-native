@@ -7,7 +7,6 @@ interface Props {
 }
 
 export class RecieptScreen extends Component<Props> {
-
 	componentDidMount() {
 		console.log('PROPS', this.props.navigation.state.params);
 		const { sessionId, userId, orderId } = this.props.navigation.state.params;
@@ -28,15 +27,25 @@ export class RecieptScreen extends Component<Props> {
 	}
 
 	goBack = () => {
-		this.props.navigation.goBack();
+		const { sessionId, userId } = this.props.navigation.state.params;
+		this.props.navigation.navigate('Menu', { userId, sessionId });
+	}
+
+	getDeliveryDate = () => {
+		const { estimatedTime } = this.props.navigation.state.params;
+		
+		let date = new Date(); 
+		date.setMinutes(date.getMinutes() + estimatedTime);
+		return date;
 	}
 
 	render() {
-
+		const { totalPrice, estimatedTime } = this.props.navigation.state.params;
 		return (
 			<View style={style.content}>
-				{/* {loading && <ActivityIndicator />} */}
-				
+				<Text>{`Price ontime delivery: €${(totalPrice * 1.1).toFixed(2)}`}</Text>
+				<Text>{`Price late delivery: €${(totalPrice / 2).toFixed(2)}`}</Text>
+				<Text>{`Estimated delivery in: ${estimatedTime.toFixed(2)} minutes`}</Text>
 				<Button title="Go Back" onPress={this.goBack}/>
 			</View>
 		);

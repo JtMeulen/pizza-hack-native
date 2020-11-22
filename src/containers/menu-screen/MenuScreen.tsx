@@ -32,8 +32,6 @@ export class MenuScreen extends Component<Props, State> {
   }
 
 	componentDidMount() {
-		const { sessionId, userId } = this.props.navigation.state.params;
-
 		fetch(BASE_URL + 'menu')
 			.then(response => response.json())
 			.then(data => {
@@ -74,12 +72,14 @@ export class MenuScreen extends Component<Props, State> {
 		}));
 	}
 
-	canAdd = () =>  this.state.toppingsLeft > 0;
-	canSubtract = (idx: number) => Boolean(this.state.toppings[idx].amount > 0);
+	// TODO clean up this part
+	canAdd = (idx: number) => this.state.toppingsLeft > 0 && this.state.toppings[idx].value !== 'SOLD OUT' && !this.state.loading;
+	canSubtract = (idx: number) => this.state.toppings[idx].amount > 0 && this.state.toppings[idx].value !== 'SOLD OUT' && !this.state.loading;
 
 	placeOrder = () => {
+		this.setState({ loading: true });
+
 		const { sessionId, userId } = this.props.navigation.state.params;
-		console.log('PROPS', sessionId, ' + ', userId);
 		fetch(BASE_URL + 'order', {
 			method: 'POST',
 			headers: {
@@ -88,7 +88,7 @@ export class MenuScreen extends Component<Props, State> {
 			},
 			body: JSON.stringify({ 
 				uid: userId,
-				pizza: ['Meat', 'Bacon', 'Cheese']
+				pizza: this.getToppings()
 			})
 		})
 			.then(response => response.json())
@@ -97,18 +97,37 @@ export class MenuScreen extends Component<Props, State> {
 				if(!data.message) {
 					this.props.navigation.navigate('Reciept', { 
 						estimatedTime: data.estimatedTime,
+						totalPrice: this.getTotalPrice(),
 						orderId: data.id,
 						userId: userId,
 						sessionId: sessionId
 					});
 				} else {
-					this.setState({ error: data.message });
+					this.setState({ loading: false, error: data.message });
 				}
 			})
 			.catch((e) => {
 				console.error('Error:', e);
-				this.setState({ error: 'Something went wrong.' });
+				this.setState({ loading: false, error: 'Something went wrong.' });
 			});
+	}
+
+	// TODO perhaps find a nicer way of adding the toppin names
+	getToppings = () => {
+		const addedToppings = this.state.toppings.filter((item) => item.amount > 0);
+		const topArr:string[] = [];
+		addedToppings.forEach((item) => {
+			for(let i = 0; i < item.amount; i++) {
+				topArr.push(item.key);
+			}
+		})
+		return topArr;
+	}
+
+	getTotalPrice = () => {
+		return this.state.toppings
+			.filter((item) => item.amount > 0)
+			.reduce((acc, item) => acc + (item.value * item.amount), 0)
 	}
 
 	render() {
@@ -117,21 +136,20 @@ export class MenuScreen extends Component<Props, State> {
 		return (
 			<View style={style.content}>
 				{loading && <ActivityIndicator />}
-				{/* TODO: Add total cost amount */}
-				{/* TODO: Add error text if menu call fails */}
-				<Text>{`Toppings left: ${toppingsLeft}`}</Text>
 
+				<Text style={style.bold}>{`Toppings left: ${toppingsLeft}`}</Text>
+				<Text style={style.bold}>{`Topping Total: €${this.getTotalPrice()}`}</Text>
 				{toppings.map((item, idx) => {
 					return (
 						<View key={item.key} style={style.itemRow}>
 							<Text>{`${item.key} €${item.value} - Amount: ${item.amount}`}</Text>
 							<Button title={'-'} disabled={!this.canSubtract(idx)} onPress={() => this.removeItem(idx)} />
-							<Button title={'+'} disabled={!this.canAdd()} onPress={() => this.addItem(idx)} />
+							<Button title={'+'} disabled={!this.canAdd(idx)} onPress={() => this.addItem(idx)} />
 						</View>
 					)
 				})}
 										
-				<Button title="Place Order" onPress={this.placeOrder}/>
+				<Button title="Place Order" onPress={this.placeOrder} disabled={this.state.loading} />
 				<Text style={style.error}>{error}</Text>
 			</View>
 		);
@@ -150,5 +168,9 @@ const style = StyleSheet.create({
 	},
 	error: {
 		color: 'red'
+	},
+	bold: {
+		fontSize: 14,
+		fontWeight: '700'
 	}
 });
