@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { View, StyleSheet, Text, TextInput, Button } from "react-native";
+import { BASE_URL } from '../utils/constants';
 
 interface Props {
   navigation: any
@@ -7,19 +8,37 @@ interface Props {
 
 export class AuthScreen extends Component<Props> {
 	state = {
-		email: ''
-	}
-
-	login = () => {
-		// make post request to /login
-		// .then(() => navigate here)
-		this.props.navigation.navigate('Menu', { userId: 'loginUserID', sessionId: '5678' });
+		email: '',
+		error: ''
 	}
 
 	register = () => {
-		// make post request to /register
-		// .then(() => navigate here)
-		this.props.navigation.navigate('Menu', { userId: 'registerUserID', sessionId: '5678' });
+		// We have to use the registration auth since we need the UID to login, 
+		// and UID is only returned after registering. Login should require mail instead of UID in the api
+		fetch(BASE_URL + 'user', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ mail: this.state.email }),
+		})
+			.then(response => response.json())
+			.then(data => {
+				console.log('Success:', data);
+				if(!data.uid) {
+					// since the api doesnt return an error on existing accounts but just a string on a success message
+					// we are trying to catch it here
+					this.setState({
+						error: data,
+						email: ''
+					})
+				} else {
+					this.props.navigation.navigate('Menu', { userId: data.uid, sessionId: data.auth.userToken });
+				}
+			})
+			.catch((e) => {
+				console.error('Error:', e);
+			});
 	}
 
 	onChangeText = (text: string) => {
@@ -45,8 +64,9 @@ export class AuthScreen extends Component<Props> {
 					autoCapitalize="none"
 					autoFocus
 				/>
-				<Button title={"Login"} onPress={this.login} disabled={!this.isEmailValid()} />
 				<Button title={"Register"} onPress={this.register} disabled={!this.isEmailValid()} />
+
+				<Text style={style.error}>{this.state.error}</Text>
 			</View>
 		);
 	};
@@ -65,5 +85,8 @@ const style = StyleSheet.create({
 		alignSelf: 'stretch',
 		margin: 20,
 		paddingLeft: 20
+	},
+	error: {
+		color: 'red'
 	}
 });

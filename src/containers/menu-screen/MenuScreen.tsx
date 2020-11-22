@@ -15,17 +15,19 @@ interface Toppings {
 interface State {
   toppingsLeft: number
   toppings: Toppings[]
-  loading: boolean
+	loading: boolean
+	error: boolean
 }
 
 export class MenuScreen extends Component<Props, State> {
-	constructor(props: Props, ) {
+	constructor(props: Props) {
     super(props);
 
     this.state = {
 			toppingsLeft: 3,
 			toppings: [],
-			loading: true
+			loading: true,
+			error: false
 		}
   }
 
@@ -40,6 +42,12 @@ export class MenuScreen extends Component<Props, State> {
 				this.setState({
 					loading: false,
 					toppings: toppingsArr
+				});
+			})
+			.catch(() => {
+				this.setState({
+					loading: false,
+					error: true
 				});
 			});
 	}
@@ -71,15 +79,16 @@ export class MenuScreen extends Component<Props, State> {
 		this.props.navigation.navigate('Reciept', { userId: '1234', sessionId: '5678' }); // will be available under route.params
 	}
 
-
-
 	render() {
-		const { toppings, loading, toppingsLeft } = this.state;
+		const { toppings, toppingsLeft, loading, error } = this.state;
 
 		return (
 			<View style={style.content}>
 				{loading && <ActivityIndicator />}
-
+				{/* {error && <Text style={style.error}>{Something went wrong, come back later}</Text>} */}
+				
+				{/* TODO: Add total cost amount */}
+				{/* TODO: Add error text if menu call fails */}
 				<Text>{`Toppings left: ${toppingsLeft}`}</Text>
 				{toppings.map((item, idx) => {
 					return (
@@ -106,5 +115,8 @@ const style = StyleSheet.create({
 	itemRow: {
 		flexDirection: "row",
 		alignItems: "center"
+	},
+	error: {
+		color: 'red'
 	}
 });
