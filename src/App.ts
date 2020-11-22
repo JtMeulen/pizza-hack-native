@@ -1,10 +1,10 @@
 import { createSwitchNavigator, createAppContainer } from "react-navigation";
 import { AuthScreen } from "./containers/auth-screen/AuthScreen";
-import { TestScreen } from "./containers/test-screen/TestScreen";
+import { MenuScreen } from "./containers/menu-screen/MenuScreen";
 
 const TestNavigation = createSwitchNavigator({
 	Auth: { screen: AuthScreen },
-	Test: { screen: TestScreen }
+	Menu: { screen: MenuScreen }
 });
 
 export default createAppContainer(TestNavigation);

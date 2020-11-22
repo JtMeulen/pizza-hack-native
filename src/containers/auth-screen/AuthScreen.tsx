@@ -13,13 +13,13 @@ export class AuthScreen extends Component<Props> {
 	login = () => {
 		// make post request to /login
 		// .then(() => navigate here)
-		this.props.navigation.navigate('Test', { userId: 'loginUserID', sessionId: '5678' });
+		this.props.navigation.navigate('Menu', { userId: 'loginUserID', sessionId: '5678' });
 	}
 
 	register = () => {
 		// make post request to /register
 		// .then(() => navigate here)
-		this.props.navigation.navigate('Test', { userId: 'registerUserID', sessionId: '5678' });
+		this.props.navigation.navigate('Menu', { userId: 'registerUserID', sessionId: '5678' });
 	}
 
 	onChangeText = (text: string) => {
