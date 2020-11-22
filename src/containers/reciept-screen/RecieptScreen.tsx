@@ -1,31 +1,11 @@
 import React, { Component } from "react";
-import { View, StyleSheet, ActivityIndicator, Button, Text } from "react-native";
-import { BASE_URL } from '../utils/constants';
+import { View, StyleSheet, Button, Text } from "react-native";
 
 interface Props {
   navigation: any
 }
 
 export class RecieptScreen extends Component<Props> {
-	componentDidMount() {
-		console.log('PROPS', this.props.navigation.state.params);
-		const { sessionId, userId, orderId } = this.props.navigation.state.params;
-
-		fetch(`${BASE_URL}order/${userId}/${orderId}`, {
-			method: 'GET',
-			headers: {
-				'User-Token': sessionId
-			}
-		})
-			.then(response => response.json())
-			.then((data) => {
-				console.log('Success: ', data)
-			})
-			.catch((e) => {
-				console.log('Error: ', e)
-			});
-	}
-
 	goBack = () => {
 		const { sessionId, userId } = this.props.navigation.state.params;
 		this.props.navigation.navigate('Menu', { userId, sessionId });
@@ -33,14 +13,14 @@ export class RecieptScreen extends Component<Props> {
 
 	getDeliveryDate = () => {
 		const { estimatedTime } = this.props.navigation.state.params;
-		
-		let date = new Date(); 
-		date.setMinutes(date.getMinutes() + estimatedTime);
-		return date;
+		const date = new Date(); 
+
+		return date.setMinutes(date.getMinutes() + estimatedTime);;
 	}
 
 	render() {
-		const { totalPrice, estimatedTime } = this.props.navigation.state.params;
+		const { totalPrice, estimatedTime, toppings } = this.props.navigation.state.params;
+		console.log('toppins', toppings);
 		return (
 			<View style={style.content}>
 				<Text>{`Price ontime delivery: €${(totalPrice * 1.1).toFixed(2)}`}</Text>

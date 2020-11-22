@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { View, StyleSheet, ActivityIndicator, Button, Text } from "react-native";
-import { BASE_URL } from '../utils/constants';
+import { BASE_URL, SOLD_OUT } from '../utils/constants';
 
 interface Props {
   navigation: any
@@ -54,27 +54,17 @@ export class MenuScreen extends Component<Props, State> {
 			});
 	}
 
-	addItem = (idx: number) => {
+	updateItem = (idx: number, add: number) => {
 		const newToppings = [...this.state.toppings];
-		newToppings[idx].amount++;
+		newToppings[idx].amount += add;
 		this.setState(prevState => ({ 
 			toppings: newToppings, 
-			toppingsLeft: prevState.toppingsLeft - 1 
+			toppingsLeft: prevState.toppingsLeft - add
 		}));
 	}
 
-	removeItem = (idx: number) => {
-		const newToppings = [...this.state.toppings];
-		newToppings[idx].amount--;
-		this.setState(prevState => ({ 
-			toppings: newToppings, 
-			toppingsLeft: prevState.toppingsLeft + 1 
-		}));
-	}
-
-	// TODO clean up this part
-	canAdd = (idx: number) => this.state.toppingsLeft > 0 && this.state.toppings[idx].value !== 'SOLD OUT' && !this.state.loading;
-	canSubtract = (idx: number) => this.state.toppings[idx].amount > 0 && this.state.toppings[idx].value !== 'SOLD OUT' && !this.state.loading;
+	canAdd = (idx: number, status: string) => this.state.toppingsLeft > 0 && status !== SOLD_OUT && !this.state.loading;
+	canSubtract = (idx: number, status: string) => this.state.toppings[idx].amount > 0 && status !== SOLD_OUT && !this.state.loading;
 
 	placeOrder = () => {
 		this.setState({ loading: true });
@@ -93,14 +83,13 @@ export class MenuScreen extends Component<Props, State> {
 		})
 			.then(response => response.json())
 			.then(data => {
-				console.log('Success', data);
 				if(!data.message) {
 					this.props.navigation.navigate('Reciept', { 
+						userId: userId,
+						sessionId: sessionId,
 						estimatedTime: data.estimatedTime,
 						totalPrice: this.getTotalPrice(),
-						orderId: data.id,
-						userId: userId,
-						sessionId: sessionId
+						toppings: this.getToppings()
 					});
 				} else {
 					this.setState({ loading: false, error: data.message });
@@ -112,16 +101,15 @@ export class MenuScreen extends Component<Props, State> {
 			});
 	}
 
-	// TODO perhaps find a nicer way of adding the toppin names
 	getToppings = () => {
-		const addedToppings = this.state.toppings.filter((item) => item.amount > 0);
-		const topArr:string[] = [];
-		addedToppings.forEach((item) => {
-			for(let i = 0; i < item.amount; i++) {
-				topArr.push(item.key);
-			}
-		})
-		return topArr;
+		return this.state.toppings
+			.filter((item) => item.amount > 0)
+			.reduce((acc:string[], item) => {
+				for(let i = 0; i < item.amount; i++) {
+					acc.push(item.key);
+				}
+				return acc;
+			}, [])
 	}
 
 	getTotalPrice = () => {
@@ -138,18 +126,32 @@ export class MenuScreen extends Component<Props, State> {
 				{loading && <ActivityIndicator />}
 
 				<Text style={style.bold}>{`Toppings left: ${toppingsLeft}`}</Text>
-				<Text style={style.bold}>{`Topping Total: €${this.getTotalPrice()}`}</Text>
+				<Text style={style.bold}>{`Topping Total: €${this.getTotalPrice().toFixed(2)}`}</Text>
+
 				{toppings.map((item, idx) => {
 					return (
 						<View key={item.key} style={style.itemRow}>
-							<Text>{`${item.key} €${item.value} - Amount: ${item.amount}`}</Text>
-							<Button title={'-'} disabled={!this.canSubtract(idx)} onPress={() => this.removeItem(idx)} />
-							<Button title={'+'} disabled={!this.canAdd(idx)} onPress={() => this.addItem(idx)} />
+							<Text style={style.name}>{`${item.key} - ${item.value != SOLD_OUT && '€'}${item.value}`}</Text>
+							<Button 
+								title={'-'} 
+								disabled={!this.canSubtract(idx, item.value)} 
+								onPress={() => this.updateItem(idx, -1)} 
+							/>
+							<Text>{item.amount}</Text>
+							<Button 
+								title={'+'} 
+								disabled={!this.canAdd(idx, item.value)} 
+								onPress={() => this.updateItem(idx, 1)} 
+							/>
 						</View>
 					)
 				})}
 										
-				<Button title="Place Order" onPress={this.placeOrder} disabled={this.state.loading} />
+				<Button 
+					title="Place Order" 
+					disabled={loading || toppingsLeft >= 3} 
+					onPress={this.placeOrder}
+				/>
 				<Text style={style.error}>{error}</Text>
 			</View>
 		);
@@ -164,7 +166,11 @@ const style = StyleSheet.create({
 	},
 	itemRow: {
 		flexDirection: "row",
-		alignItems: "center"
+		alignItems: "center",
+		height: 40
+	},
+	name: {
+		flex: 0.6
 	},
 	error: {
 		color: 'red'

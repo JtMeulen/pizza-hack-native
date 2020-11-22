@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import { View, StyleSheet, Text, TextInput, Button } from "react-native";
-import { BASE_URL } from '../utils/constants';
+import { View, StyleSheet, Text, TextInput, Button, ActivityIndicator } from "react-native";
+import { BASE_URL, EMAIL_REGEX } from '../utils/constants';
 
 interface Props {
   navigation: any
@@ -9,10 +9,12 @@ interface Props {
 export class AuthScreen extends Component<Props> {
 	state = {
 		email: '',
-		error: ''
+		error: '',
+		loading: false
 	}
 
 	register = () => {
+		this.setState({loading: true})
 		// We have to use the registration auth since we need the UID to login, 
 		// and UID is only returned after registering. Login should require mail instead of UID in the api
 		fetch(BASE_URL + 'user', {
@@ -27,17 +29,20 @@ export class AuthScreen extends Component<Props> {
 				if(data && data.message) {
 					// since the api doesnt return an error on existing accounts but just a string on a success message
 					// we are trying to catch it here
-					this.setState({
-						error: data.message,
-						email: ''
-					})
+					this.showError(data.message);
 				} else {
 					this.props.navigation.navigate('Menu', { userId: data.uid, sessionId: data.auth.userToken });
 				}
 			})
-			.catch((e) => {
-				console.error('Error:', e);
-			});
+			.catch(() => this.showError('Something went wrong'));
+	}
+
+	showError = (message: string) => {
+		this.setState({
+			error: message,
+			email: '',
+			loading: false
+		})
 	}
 
 	onChangeText = (text: string) => {
@@ -45,15 +50,13 @@ export class AuthScreen extends Component<Props> {
 	}
 
 	isEmailValid = () => {
-		// this should be improved to do some email validating.
-		// maybe regex?
-		return this.state.email.length > 3;
+    return EMAIL_REGEX.test(String(this.state.email).toLowerCase());
 	}
 
 	render() {
 		return (
 			<View style={style.content}>
-				<Text>Login in here!</Text>
+				<Text style={style.title}>Register a new account here</Text>
 				<TextInput
 					style={style.input}
 					onChangeText={text => this.onChangeText(text)}
@@ -63,8 +66,9 @@ export class AuthScreen extends Component<Props> {
 					autoCapitalize="none"
 					autoFocus
 				/>
-				<Button title={"Register"} onPress={this.register} disabled={!this.isEmailValid()} />
+				<Button title={"Register"} onPress={this.register} disabled={!this.isEmailValid() || this.state.loading} />
 
+				{this.state.loading && <ActivityIndicator />}
 				<Text style={style.error}>{this.state.error}</Text>
 			</View>
 		);
@@ -76,6 +80,10 @@ const style = StyleSheet.create({
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	title: {
+		fontSize: 16,
+		fontWeight: '700'
 	},
 	input: { 
 		height: 40, 
