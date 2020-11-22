@@ -16,7 +16,7 @@ interface State {
   toppingsLeft: number
   toppings: Toppings[]
 	loading: boolean
-	error: boolean
+	error: string
 }
 
 export class MenuScreen extends Component<Props, State> {
@@ -27,25 +27,31 @@ export class MenuScreen extends Component<Props, State> {
 			toppingsLeft: 3,
 			toppings: [],
 			loading: true,
-			error: false
+			error: ''
 		}
   }
 
 	componentDidMount() {
+		const { sessionId, userId } = this.props.navigation.state.params;
+
 		fetch(BASE_URL + 'menu')
 			.then(response => response.json())
-			.then(({ toppings }) => {
-				// convert to array, for better usability
-				const toppingsArr = Object.entries(toppings).map(([key, value]) => ({key, value, amount: 0}));
-				this.setState({
-					loading: false,
-					toppings: toppingsArr
-				});
+			.then(data => {
+				if(!data.message) {
+					// convert to array, for better usability
+					const toppingsArr = Object.entries(data.toppings).map(([key, value]) => ({key, value, amount: 0}));
+					this.setState({
+						loading: false,
+						toppings: toppingsArr
+					});
+				} else {
+					this.setState({ error: data.message });
+				}
 			})
 			.catch(() => {
 				this.setState({
 					loading: false,
-					error: true
+					error: 'Something went wrong'
 				});
 			});
 	}
@@ -72,9 +78,8 @@ export class MenuScreen extends Component<Props, State> {
 	canSubtract = (idx: number) => Boolean(this.state.toppings[idx].amount > 0);
 
 	placeOrder = () => {
-		console.log('PROPS', this.props.navigation.state.params);
 		const { sessionId, userId } = this.props.navigation.state.params;
-
+		console.log('PROPS', sessionId, ' + ', userId);
 		fetch(BASE_URL + 'order', {
 			method: 'POST',
 			headers: {
@@ -88,13 +93,21 @@ export class MenuScreen extends Component<Props, State> {
 		})
 			.then(response => response.json())
 			.then(data => {
+				console.log('Success', data);
 				if(!data.message) {
-					console.log('Success', data);
-					this.props.navigation.navigate('Reciept', { estimatedTime: data.estimatedTime });
+					this.props.navigation.navigate('Reciept', { 
+						estimatedTime: data.estimatedTime,
+						orderId: data.id,
+						userId: userId,
+						sessionId: sessionId
+					});
+				} else {
+					this.setState({ error: data.message });
 				}
 			})
 			.catch((e) => {
 				console.error('Error:', e);
+				this.setState({ error: 'Something went wrong.' });
 			});
 	}
 
@@ -104,11 +117,10 @@ export class MenuScreen extends Component<Props, State> {
 		return (
 			<View style={style.content}>
 				{loading && <ActivityIndicator />}
-				{error && <Text style={style.error}>{'Something went wrong, come back later'}</Text>}
-				
 				{/* TODO: Add total cost amount */}
 				{/* TODO: Add error text if menu call fails */}
 				<Text>{`Toppings left: ${toppingsLeft}`}</Text>
+
 				{toppings.map((item, idx) => {
 					return (
 						<View key={item.key} style={style.itemRow}>
@@ -120,6 +132,7 @@ export class MenuScreen extends Component<Props, State> {
 				})}
 										
 				<Button title="Place Order" onPress={this.placeOrder}/>
+				<Text style={style.error}>{error}</Text>
 			</View>
 		);
 	};
