@@ -20,12 +20,13 @@ export class RecieptScreen extends Component<Props> {
 
   render() {
     const { totalPrice, estimatedTime, toppings } = this.props.navigation.state.params;
-    console.log('toppins', toppings);
+
     return (
       <View style={style.content}>
-        <Text>{`Price ontime delivery: €${(totalPrice * 1.1).toFixed(2)}`}</Text>
-        <Text>{`Price late delivery: €${(totalPrice / 2).toFixed(2)}`}</Text>
-        <Text>{`Estimated delivery in: ${estimatedTime.toFixed(2)} minutes`}</Text>
+        <Text style={style.bold}>{toppings.join(' + ')}</Text>
+        <Text>{`Total price incl delivery: €${(totalPrice * 1.1).toFixed(2)}`}</Text>
+        <Text>{`Total price late delivery: €${(totalPrice / 2).toFixed(2)}`}</Text>
+        <Text>{`Estimated delivery in: ${Math.round(estimatedTime)} minutes`}</Text>
         <Button title="Go Back" onPress={this.goBack}/>
       </View>
     );
@@ -37,5 +38,9 @@ const style = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center"
+  },
+  bold: {
+    fontWeight: '700',
+    paddingBottom: 12
   }
 });

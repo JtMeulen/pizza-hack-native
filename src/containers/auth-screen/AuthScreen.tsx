@@ -15,8 +15,8 @@ export class AuthScreen extends Component<Props> {
 
   register = () => {
     this.setState({loading: true})
-    // We have to use the registration auth since we need the UID to login, 
-    // and UID is only returned after registering. Login should require mail instead of UID in the api
+    // We have to use the registration auth since we need the UID + sessionId to login, 
+    // and UID/sessionId are only returned after registering. Login should require mail instead of UID in the api
     fetch(BASE_URL + 'user', {
       method: 'POST',
       headers: {

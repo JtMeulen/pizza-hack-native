@@ -96,7 +96,6 @@ export class MenuScreen extends Component<Props, State> {
         }
       })
       .catch((e) => {
-        console.error('Error:', e);
         this.setState({ loading: false, error: 'Something went wrong.' });
       });
   }
